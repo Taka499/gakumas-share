@@ -7,6 +7,14 @@
 - [uv](https://docs.astral.sh/uv/) パッケージマネージャー
 - MongoDB (Atlas など) ※接続設定は別途実施
 
+## 環境変数
+`backend/.env` に以下の値を設定してください。
+
+| 変数名 | 説明 |
+| --- | --- |
+| `MONGODB_URI` | MongoDB の接続文字列 |
+| `MONGODB_DB` | 使用するデータベース名（未指定時は `gakumas-share`） |
+
 ## 依存関係インストール
 ```bash
 cd backend
@@ -36,4 +44,3 @@ uv run pytest
 - ルーターは `app/routers/` に配置し、`app/main.py` でインポートして登録します。
 - 非同期テストは `pytest.mark.asyncio` と `httpx.ASGITransport` を併用するとスムーズです。
 - 仕様変更は `docs/MVP.md` と合わせて更新し、齟齬を防ぎましょう。
-
