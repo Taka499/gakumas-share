@@ -31,7 +31,7 @@
 
 ### 必要な環境
 - Node.js 18+
-- Python 3.9+
+- Python 3.11+
 - MongoDB
 
 ### セットアップ手順
