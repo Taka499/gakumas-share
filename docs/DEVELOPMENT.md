@@ -8,12 +8,17 @@
 - MongoDB (Atlas など) ※接続設定は別途実施
 
 ## 環境変数
-`backend/.env` に以下の値を設定してください。
+`backend/.env` に以下の値を設定してください。`backend/.env.example` をコピーするとスムーズです。
 
 | 変数名 | 説明 |
 | --- | --- |
 | `MONGODB_URI` | MongoDB の接続文字列 |
 | `MONGODB_DB` | 使用するデータベース名（未指定時は `gakumas-share`） |
+| `DISCORD_CLIENT_ID` | DiscordアプリケーションのクライアントID |
+| `DISCORD_CLIENT_SECRET` | Discordアプリケーションのクライアントシークレット |
+| `DISCORD_REDIRECT_URI` | DiscordリダイレクトURI（例: `http://localhost:8000/api/auth/discord/callback`） |
+| `JWT_SECRET_KEY` | JWT署名用シークレット（開発ではダミー値でも可） |
+| `JWT_ACCESS_TOKEN_EXPIRES_IN` | JWTアクセストークンの有効期限（秒） |
 
 ## 依存関係インストール
 ```bash
@@ -39,6 +44,15 @@ uv run pytest
 ```
 
 `app/tests/test_main.py` にはルートとヘルスチェックのスモークテストが含まれています。今後の機能追加に合わせてテストケースを拡張してください。
+
+## フロントエンド環境変数
+`frontend/.env` に以下の値を設定してください。`frontend/.env.example` をコピーして編集します。
+
+| 変数名 | 説明 |
+| --- | --- |
+| `VITE_API_BASE_URL` | バックエンドAPIのベースURL（例: `http://localhost:8000`） |
+| `VITE_DISCORD_CLIENT_ID` | DiscordクライアントID（認可URL生成に使用） |
+| `VITE_DISCORD_REDIRECT_URI` | DiscordリダイレクトURI（バックエンドと同値） |
 
 ## 開発時のヒント
 - ルーターは `app/routers/` に配置し、`app/main.py` でインポートして登録します。
