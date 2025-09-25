@@ -1,0 +1,25 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "authlib>=1.6.4",
+    "fastapi[standard]>=0.117.1",
+    "itsdangerous>=2.2.0",
+    "motor>=3.7.1",
+    "pydantic>=2.11.9",
+    "pydantic-settings>=2.10.1",
+    "pymongo[srv]>=4.15.1",
+    "supertokens-python>=0.30.2",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "mongomock>=4.3.0",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "ruff>=0.13.1",
+]
