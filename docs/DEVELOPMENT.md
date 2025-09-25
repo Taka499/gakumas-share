@@ -19,6 +19,8 @@
 | `DISCORD_REDIRECT_URI` | DiscordリダイレクトURI（例: `http://localhost:8000/api/auth/discord/callback`） |
 | `JWT_SECRET_KEY` | JWT署名用シークレット（開発ではダミー値でも可） |
 | `JWT_ACCESS_TOKEN_EXPIRES_IN` | JWTアクセストークンの有効期限（秒） |
+| `SUPERTOKENS_CORE_URL` | SuperTokens Core のURL（例: `http://127.0.0.1:3567`） |
+| `SUPERTOKENS_CORE_API_KEY` | SuperTokens Core API Key（有効化している場合のみ） |
 
 ## 依存関係インストール
 ```bash
@@ -58,3 +60,4 @@ uv run pytest
 - ルーターは `app/routers/` に配置し、`app/main.py` でインポートして登録します。
 - 非同期テストは `pytest.mark.asyncio` と `httpx.ASGITransport` を併用するとスムーズです。
 - 仕様変更は `docs/MVP.md` と合わせて更新し、齟齬を防ぎましょう。
+- 認証／セッション戦略は `docs/AUTHENTICATION.md` にまとめています。OAuth や SuperTokens の実装前に参照してください。
