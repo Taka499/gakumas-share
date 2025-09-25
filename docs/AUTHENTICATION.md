@@ -75,6 +75,13 @@ SuperTokens はセッションごとに `sessionHandle` が割り当てられる
 - フロントエンドでは SuperTokens Frontend SDK (例: `supertokens-auth-react`) を採用すると、Cookieハンドリングと自動リフレッシュが容易になる。
 - Discord OAuth の `redirect_uri` はバックエンドのコールバックURLと一致させ、フロントからは `/api/auth/discord/login` へのリンクを提供するだけで良い。
 
+## テスト方針
+
+- **セッション生成**: `/api/auth/discord/callback` でユーザー作成／更新→`create_new_session` 呼び出し→`Set-Cookie` ヘッダーが返却されることを httpx + SuperTokens のモックで検証する。
+- **トークンローテーション**: SuperTokens の `/auth/session/refresh` を利用した際に新しいアクセストークン／リフレッシュトークンが払い出されること、盗難検知時の 401 応答を確認する。
+- **クッキー属性**: `cookie_secure` / `same_site` 設定が環境に応じて切り替わることを設定値テストで確認する。
+- **端末別失効**: `session.revoke_session` や Management API を利用してセッションを失効させた際、保護エンドポイントが 401 を返すことを確認する。
+
 ## 今後の拡張
 
 - 端末別失効をユーザー設定画面から行いたい場合は、SuperTokens の Management API を呼び、ユーザーのセッション一覧を取得して個別失効するUIを追加する。
