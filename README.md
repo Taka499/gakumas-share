@@ -7,7 +7,7 @@
 - メモリー編成の投稿・編集
 - ステージ・アイドル別検索
 - 編成詳細の閲覧
-- ユーザー認証
+- Discord OAuth2 ログイン（SuperTokens セッション管理）
 
 ## 🛠 技術スタック
 
@@ -21,7 +21,8 @@
 - Python
 - FastAPI
 - MongoDB
-- JWT認証
+- Authlib + Discord OAuth2
+- SuperTokens (セッション管理)
 
 ### インフラ
 - Vercel (フロントエンド)

@@ -9,14 +9,14 @@
 - **編成詳細**: 投稿内容の閲覧
 - **メモリー編成編集**: 投稿内容の更新
 - **マイ投稿一覧**: 自身の投稿をまとめて表示
-- **簡易認証**: ユーザー登録・ログイン
+- **認証**: Discord OAuth2 + SuperTokens セッション
 
 ### 1.2 MVP除外機能（フェーズ2以降）
 - いいね・コメント機能
 - 高度な検索・フィルタリング
 - ユーザープロフィール
 - ユーザーによる画像アップロード
-- リフレッシュトークン運用
+- 複数OAuthプロバイダー対応
 - レスポンシブデザイン（PC優先）
 - 通知機能
 - 統計・分析
@@ -36,9 +36,9 @@
 - **Python + FastAPI**: 最速API開発
 - **uv**: 超高速パッケージ管理
 - **Motor**: 非同期MongoDB接続
-- **Pydantic**: データバリデーション
-- **python-jose**: JWT認証
-- **python-multipart**: ファイルアップロード
+- **Pydantic / Pydantic Settings**: 設定とバリデーション
+- **Authlib**: Discord OAuth2 クライアント
+- **SuperTokens Python SDK**: セッション／トークン管理
 
 ### 2.3 データベース
 - **MongoDB**: ドキュメント型DB
@@ -57,10 +57,12 @@
 ```javascript
 {
   _id: ObjectId,
-  username: String, // ユニーク
-  email: String,    // ユニーク  
-  password_hash: String,
-  created_at: Date
+  provider: String,            // 例: "discord"
+  provider_account_id: String, // プロバイダー内のユーザーID
+  username: String,
+  avatar_url: String | null,
+  created_at: Date,
+  updated_at: Date
 }
 ```
 
@@ -106,8 +108,10 @@
 ### 3.3 インデックス（最小限）
 ```javascript
 // Users
-db.users.createIndex({ "username": 1 }, { unique: true })
-db.users.createIndex({ "email": 1 }, { unique: true })
+db.users.createIndex(
+  { "provider": 1, "provider_account_id": 1 },
+  { unique: true, name: "provider_account_unique" }
+)
 
 // MemorySets
 db.memorySets.createIndex({ "user_id": 1 })
@@ -122,11 +126,13 @@ db.memorySets.createIndex({ "created_at": -1 })
 
 ### 4.1 認証エンドポイント
 ```
-POST /api/auth/register
-POST /api/auth/login
+GET  /api/auth/discord/login     # Discord 認可URLへリダイレクト
+GET  /api/auth/discord/callback  # コード受領 → SuperTokens セッション発行
+POST /api/auth/logout            # SuperTokens 組み込みルートでセッション失効
+POST /api/auth/session/verify    # SuperTokens 組み込みルートでセッション検証
 ```
 
-> MVP方針: 有効期限の短いアクセストークンのみを採用し、リフレッシュトークンはフェーズ2で検討する。
+> SuperTokens のデフォルト挙動でアクセストークン・リフレッシュトークンのローテーション、盗難検知、Anti-CSRF を有効化する。アプリ固有のアクセストークンレスポンスは不要。
 
 ### 4.2 メモリー編成エンドポイント
 ```
@@ -151,11 +157,11 @@ GET /api/memories?p_idol=花海咲季
 
 ### 5.1 ページ構成（最小限）
 - **/** : ホーム（編成一覧）
-- **/login** : ログイン
-- **/register** : ユーザー登録  
-- **/create** : 編成投稿
-- **/memory/{id}** : 編成詳細
-- **/memory/{id}/edit** : 編成編集
+- **/auth/success** : ログイン後の遷移先（セッション確立確認）
+- **/auth/error** : OAuthエラー表示
+- **/memories/create** : 編成投稿
+- **/memories/{id}** : 編成詳細
+- **/memories/{id}/edit** : 編成編集
 - **/my** : 自分の投稿一覧
 
 ### 5.2 コンポーネント構成
@@ -172,19 +178,21 @@ src/
 │   │   ├── MemoryForm.tsx      # 投稿・編集フォーム
 │   │   └── MemoryDetail.tsx    # 編成詳細
 │   └── auth/
-│       ├── LoginForm.tsx
-│       └── RegisterForm.tsx
+│       ├── DiscordLoginButton.tsx
+│       └── SessionGuard.tsx
 ├── pages/
 │   ├── HomePage.tsx
-│   ├── LoginPage.tsx
+│   ├── AuthSuccessPage.tsx
+│   ├── AuthErrorPage.tsx
 │   ├── CreateMemoryPage.tsx
 │   ├── MemoryDetailPage.tsx
 │   └── MemoryEditPage.tsx
 ├── hooks/
-│   ├── useAuth.tsx
+│   ├── useSession.ts
 │   └── useMemories.tsx
 ├── services/
-│   └── api.ts
+│   ├── api.ts
+│   └── auth.ts
 └── types/
     └── index.ts
 ```
@@ -212,25 +220,25 @@ src/
 ```
 backend/
 ├── pyproject.toml          # uv設定・依存関係管理
-├── uv.lock                # ロックファイル
-├── .python-version        # Python 3.11指定
+├── uv.lock                 # ロックファイル
 ├── .env.example           # 環境変数テンプレート
-├── railway.json           # Railway設定
-├── Dockerfile             # Docker設定
 ├── app/
 │   ├── main.py              # FastAPI アプリケーション
 │   ├── config.py            # 設定管理
 │   ├── database.py          # MongoDB接続
-│   ├── auth.py              # JWT認証
-│   ├── startup.py           # アプリ初期化
+│   ├── oauth.py             # OAuthクライアント設定
+│   ├── supertokens.py       # SuperTokens 初期化
 │   ├── models/
 │   │   ├── __init__.py
 │   │   ├── user.py          # ユーザーモデル
 │   │   └── memory.py        # メモリー編成モデル
 │   ├── routers/
 │   │   ├── __init__.py
-│   │   ├── auth.py          # 認証API
-│   │   └── memories.py      # メモリー編成API
+│   │   ├── root.py          # ルートレスポンス
+│   │   ├── health.py        # ヘルスチェック
+│   │   └── auth.py          # Discord OAuth + セッション
+│   ├── repositories/
+│   │   └── user_repository.py
 │   └── tests/
 │       └── test_main.py     # テストファイル
 └── scripts/                # ユーティリティスクリプト
@@ -241,37 +249,30 @@ backend/
 **pyproject.toml**
 ```toml
 [project]
-name = "gakumas-memory-backend"
+name = "backend"
 version = "0.1.0"
-description = "学園アイドルマスター メモリー編成共有サイト - Backend API"
-dependencies = [
-    "fastapi>=0.104.1",
-    "uvicorn[standard]>=0.24.0",
-    "motor>=3.3.2",
-    "pydantic>=2.5.0",
-    "pydantic-settings>=2.1.0",
-    "python-jose[cryptography]>=3.3.0",
-    "passlib[bcrypt]>=1.7.4",
-    "python-multipart>=0.0.6",
-]
+description = "Gakumas Share backend API"
+readme = "README.md"
 requires-python = ">=3.11"
-
-[tool.uv]
-dev-dependencies = [
-    "pytest>=7.4.3",
-    "pytest-asyncio>=0.21.1",
-    "httpx>=0.25.2",
-    "black>=23.11.0",
-    "isort>=5.12.0",
-    "mypy>=1.7.1",
+dependencies = [
+    "authlib>=1.6.4",
+    "fastapi[standard]>=0.117.1",
+    "itsdangerous>=2.2.0",
+    "motor>=3.7.1",
+    "pydantic>=2.11.9",
+    "pydantic-settings>=2.10.1",
+    "pymongo[srv]>=4.15.1",
+    "supertokens-python>=0.30.2",
 ]
 
-[tool.black]
-line-length = 88
-target-version = ['py311']
-
-[tool.isort]
-profile = "black"
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "mongomock>=4.3.0",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "ruff>=0.13.1",
+]
 ```
 
 **.python-version**
@@ -317,7 +318,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
 from ..models.memory import MemorySetCreate, MemorySetResponse
 from ..database import get_database
-from ..auth import get_current_user
+from supertokens_python.recipe.session import SessionContainer
+from supertokens_python.recipe.session.framework.fastapi import verify_session
 
 router = APIRouter(prefix="/api/memories", tags=["memories"])
 
@@ -336,10 +338,10 @@ async def get_memories(
 @router.post("/", response_model=MemorySetResponse)
 async def create_memory(
     memory: MemorySetCreate,
-    current_user=Depends(get_current_user),
+    session: SessionContainer = Depends(verify_session()),
     db=Depends(get_database)
 ):
-    # 編成投稿処理
+    # session.get_user_id() で投稿者IDを取得
     pass
 ```
 
@@ -354,26 +356,17 @@ async def create_memory(
 ### 8.2 バックエンドセットアップ
 ```bash
 # 1. リポジトリクローン
-git clone https://github.com/[USERNAME]/gakumas-memory-sharing.git
-cd gakumas-memory-sharing/backend
+git clone https://github.com/[USERNAME]/gakumas-share.git
+cd gakumas-share/backend
 
-# 2. Python バージョン設定
-echo "3.11" > .python-version
+# 2. 依存関係同期
+uv sync
 
-# 3. プロジェクト初期化
-uv init --python 3.11
-
-# 4. 依存関係インストール
-uv add fastapi uvicorn[standard] motor pydantic pydantic-settings python-jose[cryptography] passlib[bcrypt] python-multipart
-
-# 5. 開発依存関係インストール  
-uv add --dev pytest pytest-asyncio httpx black isort mypy
-
-# 6. 環境変数設定
+# 3. 環境変数設定
 cp .env.example .env
-# .envファイルを編集してMongoDB URLなどを設定
+# .envファイルを編集してMongoDB, Discord, SuperTokens の値を設定
 
-# 7. 開発サーバー起動
+# 4. 開発サーバー起動
 uv run uvicorn app.main:app --reload
 ```
 
@@ -389,9 +382,9 @@ npm run dev
 # バックエンド
 cd backend
 uv run uvicorn app.main:app --reload    # 開発サーバー
-uv run pytest                          # テスト実行
-uv run black app/                      # コード整形
-uv run mypy app/                       # 型チェック
+uv run pytest                           # テスト実行
+uv run ruff check app/                  # 静的解析
+uv run ruff format app/                 # コード整形
 
 # フロントエンド
 cd frontend  
@@ -507,15 +500,15 @@ export const useMemories = () => {
 - [ ] バックエンド: uv でプロジェクト初期化
 - [ ] バックエンド: FastAPI基本構造実装
 - [ ] バックエンド: MongoDB 接続確認
-- [ ] バックエンド: JWT認証実装
+- [ ] バックエンド: Discord OAuth2 + SuperTokens セッション実装
 - [ ] フロントエンド: React プロジェクト初期化
 
 ### uvの主要コマンド
 ```bash
-uv init --python 3.11          # プロジェクト初期化
+uv init --python 3.11          # 新規プロジェクト初期化
 uv add package-name            # 依存関係追加
 uv add --dev package-name      # 開発依存関係追加
 uv sync                        # 依存関係同期
-uv run command                 # コマンド実行
-uv python install 3.11        # Python バージョンインストール
+uv run command                 # 仮想環境でコマンド実行
+uv python install 3.11         # Python バージョンインストール
 ```
