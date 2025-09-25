@@ -3,7 +3,11 @@
 from collections.abc import AsyncGenerator
 from typing import Optional
 
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, AsyncIOMotorDatabase
+from motor.motor_asyncio import (
+    AsyncIOMotorClient,
+    AsyncIOMotorCollection,
+    AsyncIOMotorDatabase,
+)
 
 from .config import get_settings
 
@@ -51,4 +55,3 @@ async def user_collection_dependency() -> AsyncGenerator[AsyncIOMotorCollection,
     finally:
         # Client is cached globally; no per-request cleanup required.
         pass
-

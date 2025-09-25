@@ -6,6 +6,7 @@ from authlib.integrations.base_client.errors import OAuthError
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from supertokens_python.recipe.session.asyncio import create_new_session
+from supertokens_python.types import RecipeUserId
 
 from ..config import Settings, get_settings
 from ..database import user_collection_dependency
@@ -76,14 +77,14 @@ async def discord_callback(
 
     await create_new_session(
         request,
-        response,
-        user.id,
+        tenant_id="public",
+        recipe_user_id=RecipeUserId(user.id),
         access_token_payload={
             "provider": OAuthProvider.DISCORD.value,
             "provider_account_id": user.provider_account_id,
             "username": user.username,
         },
-        session_data={"provider": OAuthProvider.DISCORD.value},
+        session_data_in_database={"provider": OAuthProvider.DISCORD.value},
     )
 
     return response
