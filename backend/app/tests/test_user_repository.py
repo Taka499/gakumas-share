@@ -33,7 +33,7 @@ def get_repository() -> UserRepository:
 
 
 @pytest.mark.asyncio
-async def test_create_user_inserts_document() -> None:
+async def test_upsert_user_creates_document() -> None:
     repo = get_repository()
     payload = UserCreate(
         provider=OAuthProvider.DISCORD,
@@ -42,7 +42,7 @@ async def test_create_user_inserts_document() -> None:
         avatar_url=None,
     )
 
-    user = await repo.create(payload)
+    user = await repo.upsert_oauth_user(payload)
 
     assert user.provider == OAuthProvider.DISCORD
     assert user.provider_account_id == "123"
@@ -54,6 +54,31 @@ async def test_create_user_inserts_document() -> None:
 
 
 @pytest.mark.asyncio
+async def test_upsert_user_updates_existing_document() -> None:
+    repo = get_repository()
+    payload = UserCreate(
+        provider=OAuthProvider.DISCORD,
+        provider_account_id="abc",
+        username="DiscordUser",
+        avatar_url="http://avatar",
+    )
+    created = await repo.upsert_oauth_user(payload)
+
+    updated_payload = UserCreate(
+        provider=OAuthProvider.DISCORD,
+        provider_account_id="abc",
+        username="UpdatedName",
+        avatar_url="http://avatar/new",
+    )
+
+    updated = await repo.upsert_oauth_user(updated_payload)
+
+    assert updated.id == created.id
+    assert updated.username == "UpdatedName"
+    assert updated.avatar_url == "http://avatar/new"
+
+
+@pytest.mark.asyncio
 async def test_get_by_provider_account_returns_user() -> None:
     repo = get_repository()
     payload = UserCreate(
@@ -62,7 +87,7 @@ async def test_get_by_provider_account_returns_user() -> None:
         username="DiscordUser",
         avatar_url="http://avatar",
     )
-    created = await repo.create(payload)
+    created = await repo.upsert_oauth_user(payload)
 
     fetched = await repo.get_by_provider_account(OAuthProvider.DISCORD, "abc")
 
@@ -84,7 +109,7 @@ async def test_get_by_provider_account_returns_none_for_unknown() -> None:
 @pytest.mark.asyncio
 async def test_update_login_timestamp_updates_value() -> None:
     repo = get_repository()
-    created = await repo.create(
+    created = await repo.upsert_oauth_user(
         UserCreate(
             provider=OAuthProvider.DISCORD,
             provider_account_id="id",

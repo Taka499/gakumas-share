@@ -17,8 +17,12 @@
 | `DISCORD_CLIENT_ID` | DiscordアプリケーションのクライアントID |
 | `DISCORD_CLIENT_SECRET` | Discordアプリケーションのクライアントシークレット |
 | `DISCORD_REDIRECT_URI` | DiscordリダイレクトURI（例: `http://localhost:8000/api/auth/discord/callback`） |
-| `JWT_SECRET_KEY` | JWT署名用シークレット（開発ではダミー値でも可） |
-| `JWT_ACCESS_TOKEN_EXPIRES_IN` | JWTアクセストークンの有効期限（秒） |
+| `DISCORD_SCOPE` | 要求するDiscordスコープ（初期値: `identify email`) |
+| `SESSION_SECRET_KEY` | OAuth state保存用のセッションシークレット |
+| `API_BASE_URL` | バックエンドAPIの公開URL（例: `http://localhost:8000`） |
+| `WEB_APP_URL` | フロントエンドの公開URL（例: `http://localhost:5173`） |
+| `AUTH_SUCCESS_PATH` | 認証成功後のリダイレクトパス（例: `/auth/success`） |
+| `AUTH_FAILURE_PATH` | 認証失敗時のリダイレクトパス（例: `/auth/error`） |
 | `SUPERTOKENS_CORE_URL` | SuperTokens Core のURL（例: `http://127.0.0.1:3567`） |
 | `SUPERTOKENS_CORE_API_KEY` | SuperTokens Core API Key（有効化している場合のみ） |
 

@@ -33,6 +33,12 @@ class UserRepository:
     async def create(self, data: UserCreate) -> UserInDB:
         """Insert a new user document and return the stored entity."""
 
+        existing = await self.get_by_provider_account(
+            data.provider, data.provider_account_id
+        )
+        if existing is not None:
+            return existing
+
         now = datetime.utcnow()
         document = {
             "provider": data.provider.value,
@@ -86,6 +92,35 @@ class UserRepository:
         if result is None:
             return None
         return _document_to_user(result)
+
+    async def upsert_oauth_user(self, data: UserCreate) -> UserInDB:
+        """Create or update a user record from OAuth profile information."""
+
+        now = datetime.utcnow()
+        update_fields = {
+            "username": data.username,
+            "avatar_url": data.avatar_url,
+            "updated_at": now,
+        }
+        document = await self._collection.find_one_and_update(
+            {
+                "provider": data.provider.value,
+                "provider_account_id": data.provider_account_id,
+            },
+            {
+                "$set": update_fields,
+                "$setOnInsert": {
+                    "provider": data.provider.value,
+                    "provider_account_id": data.provider_account_id,
+                    "created_at": now,
+                },
+            },
+            upsert=True,
+            return_document=ReturnDocument.AFTER,
+        )
+        if document is None:
+            raise RuntimeError("Failed to upsert user")
+        return _document_to_user(document)
 
 
 __all__ = ["UserRepository"]

@@ -14,9 +14,9 @@
 
 | 項目 | 値 | 備考 |
 | --- | --- | --- |
-| アクセストークン有効期限 | 600 秒 (10 分) | SuperTokens `accessTokenValidity` |
-| リフレッシュトークン有効期限（スライディング） | 30 日 | `refreshTokenValidity` |
-| リフレッシュ絶対期限 | 90 日 | `refreshTokenValidity` + `generalRefreshTokenSlidingWindow` 設定で実現 |
+| アクセストークン有効期限 | SuperTokens デフォルト（5分） | SDK設定値に準拠 |
+| リフレッシュトークン有効期限（スライディング） | SuperTokens デフォルト（約30日） | SDK設定値に準拠 |
+| リフレッシュ絶対期限 | 未設定（将来拡張） | SuperTokens の sliding window を利用 |
 | 再利用（トークン盗難）検知 | 有効 | SuperTokens のデフォルトローテーションを利用 |
 | Anti-CSRF | 有効 | Cookie 運用のため `enableAntiCsrf` を true |
 | Cookie SameSite | `lax` | SPA + OAuth コールバックを許容 |
@@ -55,7 +55,7 @@ SuperTokens はセッションごとに `sessionHandle` が割り当てられる
 
 1. `/api/auth/discord/login`
    - Authlib で Discord 認可URLを生成
-   - `state` を SuperTokens の `create_handshake` 等で保護
+   - Starlette の `SessionMiddleware` で `state` をブラウザCookieに保存
 2. `/api/auth/discord/callback`
    - Authlib で Discord アクセストークン取得
    - Discord API からユーザー情報を取得（`/users/@me`）
@@ -79,4 +79,3 @@ SuperTokens はセッションごとに `sessionHandle` が割り当てられる
 
 - 端末別失効をユーザー設定画面から行いたい場合は、SuperTokens の Management API を呼び、ユーザーのセッション一覧を取得して個別失効するUIを追加する。
 - 通知やログ監査が必要になったときは、SuperTokens の webhook / event API を利用して、セッション作成／破棄をログに記録する。
-

@@ -1,9 +1,31 @@
 """Basic smoke tests for the FastAPI application."""
 
+import os
+from importlib import reload
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from ..main import app
+os.environ.setdefault("MONGODB_URI", "mongodb://localhost:27017/test")
+os.environ.setdefault("MONGODB_DB", "gakumas-share-test")
+os.environ.setdefault("DISCORD_CLIENT_ID", "test-client")
+os.environ.setdefault("DISCORD_CLIENT_SECRET", "test-secret")
+os.environ.setdefault(
+    "DISCORD_REDIRECT_URI", "http://localhost:8000/api/auth/discord/callback"
+)
+os.environ.setdefault("DISCORD_SCOPE", "identify")
+os.environ.setdefault("SESSION_SECRET_KEY", "test-session-secret")
+os.environ.setdefault("API_BASE_URL", "http://localhost:8000")
+os.environ.setdefault("WEB_APP_URL", "http://localhost:5173")
+os.environ.setdefault("AUTH_SUCCESS_PATH", "/auth/success")
+os.environ.setdefault("AUTH_FAILURE_PATH", "/auth/error")
+os.environ.setdefault("SUPERTOKENS_CORE_URL", "http://localhost:3567")
+
+from .. import main
+
+reload(main)
+
+app = main.app
 
 
 @pytest.mark.asyncio

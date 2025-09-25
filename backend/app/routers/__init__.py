@@ -1,5 +1,5 @@
 """Router package exports."""
 
-from . import health, root
+from . import auth, health, root
 
-__all__ = ["root", "health"]
+__all__ = ["root", "health", "auth"]
