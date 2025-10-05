@@ -74,9 +74,9 @@
   title: String,
   
   // 基本情報
-  stage_type: String,    // "contest" | "idol_road"
-  stage_category: String, // "Vo" | "Da" | "Vi"
-  p_idol: String,
+  stage_type: String,    // "contest" | "event"
+  stage_plan: String,    // "free" | "sense" | "logic" | "anomaly"
+  p_idol_id: Number,     // P-Idol ID from gakumas-tools data
   clear_rank: String,    // "A+" | "S" | "S+"
   
   // メモリー構成
@@ -115,12 +115,12 @@ db.users.createIndex(
 
 // MemorySets
 db.memorySets.createIndex({ "user_id": 1 })
-db.memorySets.createIndex({ "stage_type": 1, "stage_category": 1 })
-db.memorySets.createIndex({ "p_idol": 1 })
+db.memorySets.createIndex({ "stage_type": 1, "stage_plan": 1 })
+db.memorySets.createIndex({ "p_idol_id": 1 })
 db.memorySets.createIndex({ "created_at": -1 })
 ```
 
-`p_idol` は「アイドル名 + 曲名」で構成される。現行12名のアイドルがメインカテゴリとして存在し、各曲には `stage_category`（センス / ロジック / アノマリー など）が紐づく。同一アイドルかつ同一カテゴリのメモリー同士でのみ編成可能。
+`p_idol_id` は現状 gakumas-tools データの P-Idol ID を参照する（実装優先）。将来的には「アイドル名 + 曲名」の構成に変更予定。現行12名のアイドルがメインカテゴリとして存在し、各曲には `stage_plan`（free / sense / logic / anomaly）が紐づく。データ構造は gakumas-tools プロジェクトとの互換性を保つ。
 
 ## 4. API設計
 
@@ -145,11 +145,11 @@ DELETE /api/memories/{id}         # 削除（投稿者のみ）
 
 ### 4.3 検索エンドポイント
 ```
-GET /api/memories?stage_type=contest&stage_category=Vo
-GET /api/memories?p_idol=花海咲季
+GET /api/memories?stage_type=contest&stage_plan=sense
+GET /api/memories?p_idol_id=1
 ```
 
-- `stage_type` / `stage_category` / `p_idol` はすべて任意のパラメータ。指定された条件は AND で組み合わせて絞り込む。
+- `stage_type` / `stage_plan` / `p_idol_id` はすべて任意のパラメータ。指定された条件は AND で組み合わせて絞り込む。
 - デフォルトの並び順は `created_at` 降順。`limit` の初期値は 20、最大 50 まで許容し、`skip` と併用してページネーションを行う。
 - レスポンスは `items`（編成配列）と `total`（条件一致件数）を返す JSON を想定。
 
